@@ -84,6 +84,36 @@ class CreateUser(Handler):
 
 ---
 
+## Comparison with alternatives
+
+There is no direct equivalent in Python. The closest tools each solve only part of the problem.
+
+`python-cqrs`, `pymediator`, `python-mediator` implement the mediator pattern with typed commands and handlers — conceptually close. But these are libraries without HTTP, WebSocket, DB, or a scheduler. You still need to assemble a stack on top of them using FastAPI or Litestar, SQLAlchemy, APScheduler, and python-socketio.
+
+`FastAPI` + `Litestar` are mature HTTP frameworks with DI and type safety. Litestar uses the same `msgspec`. But they solve the HTTP API problem, not the event chain problem. The internal bus with blocks still needs to be built on top of them manually.
+
+`bubus`, `messagebus` are production event bus libraries with async support. More mature on the bus side, but without an HTTP layer or DB.
+
+The real distinction of khorsyio is full-stack cohesion: in-process event bus, HTTP ASGI, WebSocket, DB, HTTP client, scheduler, DI, and multiprocessing in a single package with a single pattern. The alternative is a stack of 5-6 separate libraries, each with its own integration patterns.
+
+---
+
+## TODO
+
+Things that are not yet present but are needed for production-ready use.
+
+**OpenAPI / Swagger.** FastAPI and Litestar automatically generate documentation from types. khorsyio does not. For API-first development and team collaboration this is a significant gap.
+
+**Testing utilities.** No test client for HTTP, no mock bus for isolated handler testing. Test setup has to be built manually.
+
+**Type-safe DI.** The current DI by constructor parameter name (`db`, `client`) is implicit and not verified at startup. A typo or unknown name silently injects `app` instead of the intended dependency. Explicit dependency graph validation at `startup` is needed.
+
+**Retry and dead letter queue.** The bus has no built-in retry policy on handler failure and no mechanism for storing unprocessed events.
+
+**Observability.** Metrics and event log exist, but there is no integration with OpenTelemetry, Prometheus, or structured logging. In production scenarios this needs to be built manually.
+
+---
+
 ## Repositories
 
 - [khorsyio](https://github.com/khorsyio/khorsyio) — framework
